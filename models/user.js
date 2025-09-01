@@ -4,9 +4,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // future associations
+      // A User has one LastSeen record
+      User.hasOne(models.LastSeen, { foreignKey: 'userId', as: 'lastSeen' });
     }
   }
+
   User.init({
     userId: {
       type: DataTypes.INTEGER,
@@ -20,7 +22,10 @@ module.exports = (sequelize, DataTypes) => {
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
+      unique: true,
+      validate: {
+        isEmail: true // ✅ email validation
+      }
     },
     profileImg: {
       type: DataTypes.STRING,
@@ -35,6 +40,9 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'User',
+    tableName: 'Users', // explicit table name
+    timestamps: true    // createdAt & updatedAt
   });
+
   return User;
 };
