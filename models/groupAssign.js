@@ -2,32 +2,32 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class LastSeen extends Model {
+  class GroupAssign extends Model {
     static associate(models) {
-      LastSeen.belongsTo(models.User, {
+      GroupAssign.belongsTo(models.GroupDetail, {
+        foreignKey: 'groupId',
+        as: 'group',
+      });
+      GroupAssign.belongsTo(models.User, {
         foreignKey: 'userId',
         as: 'user',
       });
     }
   }
 
-  LastSeen.init(
+  GroupAssign.init(
     {
       id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+      groupId: { type: DataTypes.INTEGER, allowNull: false },
       userId: { type: DataTypes.INTEGER, allowNull: false },
-      timestamp: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
-      },
     },
     {
       sequelize,
-      modelName: 'LastSeen',
-      tableName: 'LastSeens',
+      modelName: 'GroupAssign',
+      tableName: 'GroupAssigns',
       timestamps: false,
     }
   );
 
-  return LastSeen;
+  return GroupAssign;
 };
