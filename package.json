@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "mysql2": "^3.14.4",
+    "nodemailer": "^7.0.6",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3"
   }

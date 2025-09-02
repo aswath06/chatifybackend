@@ -21,7 +21,8 @@ module.exports = {
       email: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true
+        unique: true,
+        defaultValue: 'unknown@example.com'
       },
       profileImg: {
         type: Sequelize.STRING,
