@@ -1,5 +1,11 @@
+'use strict';
+
 const express = require('express');
-const { sequelize, User } = require('./models'); // Sequelize instance + User model
+const http = require('http');
+const { Server } = require('socket.io');
+const { sequelize, User, Message, PrivateRoom } = require('./models');
+const crypto = require('crypto');
+
 const app = express();
 
 // ✅ Middleware to parse JSON and form data
@@ -47,15 +53,8 @@ async function fixNullUsers() {
       await user.update({ email: uniqueEmail });
     }
 
-    // Optional: fix profileImg and dateOfBirth if needed
-    await User.update(
-      { profileImg: null },
-      { where: { profileImg: null } }
-    );
-    await User.update(
-      { dateOfBirth: null },
-      { where: { dateOfBirth: null } }
-    );
+    await User.update({ profileImg: null }, { where: { profileImg: null } });
+    await User.update({ dateOfBirth: null }, { where: { dateOfBirth: null } });
 
     console.log('✅ NULL values fixed in Users table.');
   } catch (error) {
@@ -63,7 +62,13 @@ async function fixNullUsers() {
   }
 }
 
-// ----------------- Start server ----------------- //
+// ----------------- Helper: Generate Room ID ----------------- //
+function getRoomId(user1, user2) {
+  const sorted = [user1, user2].sort();
+  return crypto.createHash('md5').update(sorted.join('_')).digest('hex');
+}
+
+// ----------------- Start server with Socket.IO ----------------- //
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
@@ -72,7 +77,54 @@ async function startServer() {
     await sequelize.sync({ alter: true }); // Sync DB safely
     console.log('✅ Database synced successfully.');
 
-    app.listen(PORT, () => {
+    // Create HTTP server and attach Socket.IO
+    const server = http.createServer(app);
+    const io = new Server(server, {
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+      }
+    });
+
+    // ----------------- Socket.IO events ----------------- //
+    io.on('connection', (socket) => {
+      console.log('🟢 User connected:', socket.id);
+
+      // Join private room
+      socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+      });
+
+      // Handle sending messages
+      socket.on('sendMessage', async (data) => {
+        try {
+          const { from, to, context, media_url } = data;
+          const roomId = getRoomId(from, to);
+
+          // Ensure room exists
+          await PrivateRoom.findOrCreate({
+            where: { roomId },
+            defaults: { user1Id: from, user2Id: to, roomId }
+          });
+
+          // Create message in DB
+          const message = await Message.create({ from, to, context, media_url, roomId });
+
+          // Emit message to room
+          io.to(roomId).emit('receiveMessage', message);
+        } catch (error) {
+          console.error('❌ Error sending message via Socket.IO:', error);
+        }
+      });
+
+      socket.on('disconnect', () => {
+        console.log('🔴 User disconnected:', socket.id);
+      });
+    });
+
+    // Start server
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (err) {
