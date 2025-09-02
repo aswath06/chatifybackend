@@ -3,8 +3,8 @@ const { User } = require('../models');
 // Create User
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, profileImg, dateOfBirth } = req.body;
-    const user = await User.create({ name, email, profileImg, dateOfBirth });
+    const { name, username, email, profileImg, dateOfBirth } = req.body;
+    const user = await User.create({ name, username, email, profileImg, dateOfBirth });
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -35,11 +35,11 @@ exports.getUserById = async (req, res) => {
 // Update User
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, profileImg, dateOfBirth } = req.body;
+    const { name, username, email, profileImg, dateOfBirth } = req.body;
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    await user.update({ name, email, profileImg, dateOfBirth });
+    await user.update({ name, username, email, profileImg, dateOfBirth });
     res.json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
