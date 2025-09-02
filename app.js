@@ -3,16 +3,17 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const os = require('os');
 const { sequelize, User, Message, PrivateRoom } = require('./models');
 const crypto = require('crypto');
 
 const app = express();
 
-// ✅ Middleware to parse JSON and form data
+// ---------------- Middleware ---------------- //
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Routes
+// ---------------- Routes ---------------- //
 const userRoutes = require('./routes/userRoutes');
 const lastSeenRoutes = require('./routes/lastSeenRoutes');
 const groupDetailsRoutes = require('./routes/groupDetailsRoutes');
@@ -27,18 +28,18 @@ app.use('/api/group-assign', groupAssignRoutes);
 app.use('/api/privateRooms', privateRoomRoutes);
 app.use('/messages', messageRoutes);
 
-// ✅ Health check route
+// ---------------- Health check ---------------- //
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// ✅ Error handling middleware
+// ---------------- Error handling ---------------- //
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// ----------------- Helper: Fix NULL values in Users table ----------------- //
+// ---------------- Helper: Fix NULL Users ---------------- //
 async function fixNullUsers() {
   try {
     const usersWithNullUsername = await User.findAll({ where: { username: null } });
@@ -62,23 +63,25 @@ async function fixNullUsers() {
   }
 }
 
-// ----------------- Helper: Generate Room ID ----------------- //
+// ---------------- Helper: Generate Room ID ---------------- //
 function getRoomId(user1, user2) {
   const sorted = [user1, user2].sort();
   return crypto.createHash('md5').update(sorted.join('_')).digest('hex');
 }
 
-// ----------------- Start server with Socket.IO ----------------- //
+// ---------------- Start Server ---------------- //
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0'; // Listen on all network interfaces
 
 async function startServer() {
   try {
-    await fixNullUsers(); // Fix NULL values first
-    await sequelize.sync({ alter: true }); // Sync DB safely
+    await fixNullUsers(); 
+    await sequelize.sync({ alter: true }); 
     console.log('✅ Database synced successfully.');
 
-    // Create HTTP server and attach Socket.IO
     const server = http.createServer(app);
+
+    // ---------------- Socket.IO ---------------- //
     const io = new Server(server, {
       cors: {
         origin: '*',
@@ -86,32 +89,25 @@ async function startServer() {
       }
     });
 
-    // ----------------- Socket.IO events ----------------- //
     io.on('connection', (socket) => {
       console.log('🟢 User connected:', socket.id);
 
-      // Join private room
       socket.on('joinRoom', (roomId) => {
         socket.join(roomId);
         console.log(`User ${socket.id} joined room ${roomId}`);
       });
 
-      // Handle sending messages
       socket.on('sendMessage', async (data) => {
         try {
           const { from, to, context, media_url } = data;
           const roomId = getRoomId(from, to);
 
-          // Ensure room exists
           await PrivateRoom.findOrCreate({
             where: { roomId },
             defaults: { user1Id: from, user2Id: to, roomId }
           });
 
-          // Create message in DB
           const message = await Message.create({ from, to, context, media_url, roomId });
-
-          // Emit message to room
           io.to(roomId).emit('receiveMessage', message);
         } catch (error) {
           console.error('❌ Error sending message via Socket.IO:', error);
@@ -123,9 +119,18 @@ async function startServer() {
       });
     });
 
-    // Start server
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    server.listen(PORT, HOST, () => {
+      // Automatically get local network IP
+      const nets = os.networkInterfaces();
+      let localIp = 'localhost';
+      for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+          if (net.family === 'IPv4' && !net.internal) {
+            localIp = net.address;
+          }
+        }
+      }
+      console.log(`🚀 Server running on http://${localIp}:${PORT}`);
     });
   } catch (err) {
     console.error('❌ Database sync failed:', err.message);
