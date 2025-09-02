@@ -4,9 +4,14 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Message extends Model {
     static associate(models) {
-      // define associations here if needed
+      Message.belongsTo(models.PrivateRoom, {
+        foreignKey: 'roomId',
+        targetKey: 'roomId',
+        as: 'room'
+      });
     }
   }
+
   Message.init({
     from: {
       type: DataTypes.STRING,
@@ -26,17 +31,22 @@ module.exports = (sequelize, DataTypes) => {
     },
     timestamp: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     },
     read_receipt: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
+      allowNull: false,
+      defaultValue: false
+    },
+    roomId: {
+      type: DataTypes.STRING,
       allowNull: false
     }
   }, {
     sequelize,
     modelName: 'Message',
   });
+
   return Message;
 };

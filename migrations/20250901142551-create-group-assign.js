@@ -12,21 +12,25 @@ module.exports = {
       groupId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'GroupDetails', key: 'id' },
-        onDelete: 'CASCADE'
+        references: { model: 'GroupDetails', key: 'groupId' },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'Users', key: 'id' }, // assumes Users table exists
-        onDelete: 'CASCADE'
+        references: { model: 'Users', key: 'userId' },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       createdAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW
       },
       updatedAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW
       }
     });

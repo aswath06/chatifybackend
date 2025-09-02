@@ -10,13 +10,15 @@ app.use(express.urlencoded({ extended: true }));
 const userRoutes = require('./routes/userRoutes');
 const lastSeenRoutes = require('./routes/lastSeenRoutes');
 const groupDetailsRoutes = require('./routes/groupDetailsRoutes');
-const groupAssignRoutes = require('./routes/groupAssignRoutes');
+const groupAssignRoutes = require('./routes/groupAssignRoutes');       
 const messageRoutes = require('./routes/messageRoutes');
+const privateRoomRoutes = require('./routes/privateRoomRoutes'); // ✅ matches filename
 
 app.use('/api/users', userRoutes);
 app.use('/api/lastseen', lastSeenRoutes);
 app.use('/api/groups', groupDetailsRoutes);
 app.use('/api/group-assign', groupAssignRoutes);       
+app.use('/api/privateRooms', privateRoomRoutes); // ✅ Mounted PrivateRoom routes
 app.use('/messages', messageRoutes);
 
 // ✅ Health check route

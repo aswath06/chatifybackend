@@ -3,7 +3,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('GroupDetails', {
-      id: {
+      groupId: { // renamed PK to match naming convention
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
@@ -18,7 +18,8 @@ module.exports = {
         defaultValue: []
       },
       groupIcon: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: true
       },
       admin: {
         type: Sequelize.JSON,
@@ -26,10 +27,12 @@ module.exports = {
       },
       createdAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW
       },
       updatedAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW
       }
     });
